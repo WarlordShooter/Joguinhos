@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogo da Velha</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #2c3e50;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #34495e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 48px;
+      cursor: pointer;
+      border-radius: 10px;
+      user-select: none;
+    }
+    .cell.taken {
+      cursor: not-allowed;
+    }
+    #message {
+      font-size: 24px;
+      margin: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: #16a085;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="board"></div>
+  <div id="message"></div>
+  <button onclick="resetGame()">Reiniciar</button>
+
+  <script>
+    const board = document.getElementById("board");
+    const message = document.getElementById("message");
+    let currentPlayer = "X";
+    let gameActive = true;
+
+    function createBoard() {
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleMove);
+        board.appendChild(cell);
+      }
+    }
+
+    function handleMove(e) {
+      if (!gameActive) return;
+
+      const cell = e.target;
+      if (cell.classList.contains("taken")) return;
+
+      cell.textContent = currentPlayer;
+      cell.classList.add("taken");
+
+      if (checkWin()) {
+        message.textContent = `${currentPlayer} venceu! 🎉`;
+        gameActive = false;
+        return;
+      }
+
+      if ([...document.querySelectorAll(".cell")].every(c => c.classList.contains("taken"))) {
+        message.textContent = "Empate! 🤝";
+        gameActive = false;
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      message.textContent = `Vez de ${currentPlayer}`;
+    }
+
+    function checkWin() {
+      const cells = document.querySelectorAll(".cell");
+      const combos = [
+        [0,1,2], [3,4,5], [6,7,8], // linhas
+        [0,3,6], [1,4,7], [2,5,8], // colunas
+        [0,4,8], [2,4,6]           // diagonais
+      ];
+      return combos.some(combo => {
+        const [a,b,c] = combo;
+        return cells[a].textContent &&
+               cells[a].textContent === cells[b].textContent &&
+               cells[a].textContent === cells[c].textContent;
+      });
+    }
+
+    function resetGame() {
+      board.innerHTML = "";
+      currentPlayer = "X";
+      gameActive = true;
+      message.textContent = "Vez de X";
+      createBoard();
+    }
+
+    createBoard();
+    message.textContent = "Vez de X";
+  </script>
+</body>
+</html>

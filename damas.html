@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Damas - Versão Local</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #2c3e50;
+      margin: 0;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 80px);
+      grid-template-rows: repeat(8, 80px);
+      border: 5px solid #000;
+    }
+    .cell {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .dark {
+      background: #3e2723;
+    }
+    .light {
+      background: #efebe9;
+    }
+    .piece {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .white {
+      background: #fff;
+      border: 2px solid #ccc;
+    }
+    .black {
+      background: #000;
+      border: 2px solid #444;
+    }
+    .king {
+      box-shadow: inset 0 0 0 6px gold;
+    }
+    .selected {
+      outline: 3px solid yellow;
+    }
+    #message {
+      margin: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="message"></div>
+  <div id="board"></div>
+
+  <script>
+    const board = document.getElementById("board");
+    const message = document.getElementById("message");
+    let selectedPiece = null;
+    let currentPlayer = "white";
+
+    function createBoard() {
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          if ((row + col) % 2 === 0) {
+            cell.classList.add("light");
+          } else {
+            cell.classList.add("dark");
+            if (row < 3) {
+              const piece = createPiece("black");
+              cell.appendChild(piece);
+            } else if (row > 4) {
+              const piece = createPiece("white");
+              cell.appendChild(piece);
+            }
+          }
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function createPiece(color) {
+      const piece = document.createElement("div");
+      piece.classList.add("piece", color);
+      piece.dataset.color = color;
+      piece.dataset.king = "false";
+      piece.addEventListener("click", selectPiece);
+      return piece;
+    }
+
+    function selectPiece(e) {
+      const piece = e.target;
+      if (piece.dataset.color !== currentPlayer) return;
+      if (selectedPiece) {
+        selectedPiece.classList.remove("selected");
+      }
+      selectedPiece = piece;
+      selectedPiece.classList.add("selected");
+    }
+
+    board.addEventListener("click", (e) => {
+      if (!selectedPiece) return;
+
+      const cell = e.target.classList.contains("cell") ? e.target : e.target.parentElement;
+      if (!cell.classList.contains("cell")) return;
+
+      if (cell.children.length === 0 && cell.classList.contains("dark")) {
+        const fromRow = parseInt(selectedPiece.parentElement.dataset.row);
+        const fromCol = parseInt(selectedPiece.parentElement.dataset.col);
+        const toRow = parseInt(cell.dataset.row);
+        const toCol = parseInt(cell.dataset.col);
+
+        if (hasMandatoryCapture(currentPlayer)) {
+          if (tryCapture(fromRow, fromCol, toRow, toCol, cell)) {
+            return;
+          } else {
+            showMessage("Captura essa merda aí, Ô arrombado!");
+            return;
+          }
+        }
+
+        if (selectedPiece.dataset.king === "true") {
+          if (isValidKingMove(fromRow, fromCol, toRow, toCol)) {
+            movePiece(cell, false);
+          }
+        } else {
+          let direction = selectedPiece.dataset.color === "white" ? -1 : 1;
+          if (toRow === fromRow + direction && Math.abs(toCol - fromCol) === 1) {
+            movePiece(cell, false);
+          } else {
+            tryCapture(fromRow, fromCol, toRow, toCol, cell);
+          }
+        }
+      }
+    });
+
+    function tryCapture(fromRow, fromCol, toRow, toCol, targetCell) {
+      if (selectedPiece.dataset.king === "true") {
+        return tryKingCapture(fromRow, fromCol, toRow, toCol, targetCell);
+      } else {
+        if (Math.abs(toRow - fromRow) === 2 && Math.abs(toCol - fromCol) === 2) {
+          const middleRow = (fromRow + toRow) / 2;
+          const middleCol = (fromCol + toCol) / 2;
+          const middleCell = document.querySelector(`.cell[data-row='${middleRow}'][data-col='${middleCol}']`);
+          if (middleCell.children.length > 0) {
+            const capturedPiece = middleCell.children[0];
+            if (capturedPiece.dataset.color !== selectedPiece.dataset.color) {
+              middleCell.removeChild(capturedPiece);
+              movePiece(targetCell, true);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+    }
+
+    function tryKingCapture(fromRow, fromCol, toRow, toCol, targetCell) {
+      if (Math.abs(toRow - fromRow) === Math.abs(toCol - fromCol)) {
+        let dr = toRow > fromRow ? 1 : -1;
+        let dc = toCol > fromCol ? 1 : -1;
+        let r = fromRow + dr;
+        let c = fromCol + dc;
+        let capturedPiece = null;
+        while (r !== toRow && c !== toCol) {
+          const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+          if (cell.children.length > 0) {
+            if (cell.children[0].dataset.color === selectedPiece.dataset.color || capturedPiece) {
+              return false;
+            }
+            capturedPiece = cell.children[0];
+          }
+          r += dr;
+          c += dc;
+        }
+        if (capturedPiece) {
+          capturedPiece.parentElement.removeChild(capturedPiece);
+          movePiece(targetCell, true);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function isValidKingMove(fromRow, fromCol, toRow, toCol) {
+      if (Math.abs(toRow - fromRow) === Math.abs(toCol - fromCol)) {
+        let dr = toRow > fromRow ? 1 : -1;
+        let dc = toCol > fromCol ? 1 : -1;
+        let r = fromRow + dr;
+        let c = fromCol + dc;
+        while (r !== toRow && c !== toCol) {
+          const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+          if (cell.children.length > 0) return false;
+          r += dr;
+          c += dc;
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function hasMandatoryCapture(color) {
+      const pieces = document.querySelectorAll(`.piece.${color}`);
+      for (let piece of pieces) {
+        if (piece.dataset.king === "true") {
+          if (canKingCapture(piece)) return true;
+        } else {
+          if (canCaptureAgain(piece)) return true;
+        }
+      }
+      return false;
+    }
+
+    function canKingCapture(piece) {
+      const row = parseInt(piece.parentElement.dataset.row);
+      const col = parseInt(piece.parentElement.dataset.col);
+      let directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+      for (let [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        let captured = false;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+          const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+          if (cell.children.length > 0) {
+            if (cell.children[0].dataset.color === piece.dataset.color || captured) break;
+            captured = true;
+          } else if (captured) {
+            return true;
+          }
+          r += dr;
+          c += dc;
+        }
+      }
+      return false;
+    }
+
+    function movePiece(targetCell, wasCapture) {
+      targetCell.appendChild(selectedPiece);
+      selectedPiece.classList.remove("selected");
+
+      const row = parseInt(targetCell.dataset.row);
+      if ((selectedPiece.dataset.color === "white" && row === 0) ||
+          (selectedPiece.dataset.color === "black" && row === 7)) {
+        selectedPiece.dataset.king = "true";
+        selectedPiece.classList.add("king");
+      }
+
+      if (wasCapture) {
+        if (selectedPiece.dataset.king === "true" && canKingCapture(selectedPiece)) {
+          selectedPiece.classList.add("selected");
+          return;
+        }
+        if (canCaptureAgain(selectedPiece)) {
+          selectedPiece.classList.add("selected");
+          return;
+        }
+      }
+
+      selectedPiece = null;
+      currentPlayer = currentPlayer === "white" ? "black" : "white";
+
+      checkVictory();
+    }
+
+    function canCaptureAgain(piece) {
+      if (piece.dataset.king === "true") return canKingCapture(piece);
+
+      const row = parseInt(piece.parentElement.dataset.row);
+      const col = parseInt(piece.parentElement.dataset.col);
+      let directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+      for (let [dr, dc] of directions) {
+        const midRow = row + dr;
+        const midCol = col + dc;
+        const endRow = row + dr * 2;
+        const endCol = col + dc * 2;
+        const midCell = document.querySelector(`.cell[data-row='${midRow}'][data-col='${midCol}']`);
+        const endCell = document.querySelector(`.cell[data-row='${endRow}'][data-col='${endCol}']`);
+        if (midCell && endCell && endCell.children.length === 0 && endCell.classList.contains("dark")) {
+          if (midCell.children.length > 0) {
+            const target = midCell.children[0];
+            if (target.dataset.color !== piece.dataset.color) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function checkVictory() {
+      const whitePieces = document.querySelectorAll(".piece.white").length;
+      const blackPieces = document.querySelectorAll(".piece.black").length;
+
+      if (whitePieces === 0 || !hasMoves("white")) {
+        showMessage(" Você venceu, arrombado!");
+      } else if (blackPieces === 0 || !hasMoves("black")) {
+        showMessage(" Você venceu, arrombado!");
+      }
+    }
+
+    function hasMoves(color) {
+      const pieces = document.querySelectorAll(`.piece.${color}`);
+      for (let piece of pieces) {
+        if (piece.dataset.king === "true") {
+          if (canKingMove(piece)) return true;
+          if (canKingCapture(piece)) return true;
+        } else {
+          const row = parseInt(piece.parentElement.dataset.row);
+          const col = parseInt(piece.parentElement.dataset.col);
+          let directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+          for (let [dr, dc] of directions) {
+            const newRow = row + dr;
+            const newCol = col + dc;
+            const newCell = document.querySelector(`.cell[data-row='${newRow}'][data-col='${newCol}']`);
+            if (newCell && newCell.children.length === 0 && newCell.classList.contains("dark")) {
+              return true;
+            }
+          }
+          if (canCaptureAgain(piece)) return true;
+        }
+      }
+      return false;
+    }
+
+    function canKingMove(piece) {
+      const row = parseInt(piece.parentElement.dataset.row);
+      const col = parseInt(piece.parentElement.dataset.col);
+      let directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+      for (let [dr, dc] of directions) {
+        let r = row + dr;
+        let c = col + dc;
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+          const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+          if (cell.children.length === 0 && cell.classList.contains("dark")) {
+            return true;
+          }
+          if (cell.children.length > 0) break;
+          r += dr;
+          c += dc;
+        }
+      }
+      return false;
+    }
+
+    function showMessage(text) {
+      message.textContent = text;
+    }
+
+    createBoard();
+  </script>
+<a href="jogo-da-velha.html" style="color:white; font-size:20px;">🎮 Jogar Jogo da Velha</a>
+</body>
+</html>
