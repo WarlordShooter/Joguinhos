@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogo da Forca</title>
+  <style>
+    body { background: #222; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    #tema { font-size: 20px; margin: 10px 0; }
+    #palavra { font-size: 30px; letter-spacing: 8px; margin: 20px 0; }
+    #mensagem { margin: 15px 0; font-size: 18px; font-weight: bold; }
+    #forca { margin: 20px; font-size: 18px; }
+    #letras button { margin: 3px; padding: 10px 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; background: #444; color: white; }
+    #letras button:disabled { background: #999; cursor: not-allowed; }
+    #menu button { margin: 10px; padding: 12px 20px; font-size: 20px; border: none; border-radius: 10px; cursor: pointer; background: #0f0; color: black; font-weight: bold; }
+    a { color: #0f0; display: block; margin-top: 30px; font-size: 18px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>🎲 Jogo da Forca</h1>
+
+  <div id="menu">
+    <p>Escolha a dificuldade:</p>
+    <button onclick="iniciarJogo(1)">😎 Fácil (1 palavra)</button>
+    <button onclick="iniciarJogo(3)">🔥 Difícil (3 palavras)</button>
+  </div>
+
+  <div id="tema"></div>
+  <div id="palavra"></div>
+  <div id="mensagem"></div>
+  <div id="forca"></div>
+  <div id="letras"></div>
+
+  <a href="index.html">⬅ Voltar para os Joguinhos</a>
+
+  <script>
+    const palavras = {
+      frutas: ["banana", "melancia", "uva", "abacaxi", "laranja", "morango"],
+      animais: ["cachorro", "gato", "elefante", "tigre", "papagaio", "cobra"],
+      paises: ["brasil", "argentina", "japao", "alemanha", "canada", "mexico"],
+      objetos: ["cadeira", "mesa", "computador", "fone", "carro", "livro"]
+    };
+
+    let palavrasRodada = [];
+    let indice = 0;
+    let palavra = "";
+    let palavraEscondida = "";
+    let erros = 0;
+
+    function iniciarJogo(qtd) {
+      document.getElementById("menu").style.display = "none"; // esconde menu
+      const temas = Object.keys(palavras);
+      let temaSorteado = temas[Math.floor(Math.random() * temas.length)];
+      let lista = [...palavras[temaSorteado]];
+      lista.sort(() => 0.5 - Math.random());
+      palavrasRodada = lista.slice(0, qtd).map(p => p.toUpperCase());
+
+      indice = 0;
+      erros = 0;
+
+      document.getElementById("tema").innerText = "Tema: " + temaSorteado.toUpperCase();
+      document.getElementById("forca").innerText = "Erros: 0/6";
+      document.getElementById("mensagem").innerText = "";
+      prepararPalavra();
+
+      // cria teclado
+      const letrasDiv = document.getElementById("letras");
+      letrasDiv.innerHTML = "";
+      const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+      alfabeto.forEach(letra => {
+        let btn = document.createElement("button");
+        btn.innerText = letra;
+        btn.onclick = () => jogar(letra, btn);
+        letrasDiv.appendChild(btn);
+      });
+    }
+
+    function prepararPalavra() {
+      palavra = palavrasRodada[indice];
+      palavraEscondida = palavra.replace(/./g, "_");
+      document.getElementById("palavra").innerText = palavraEscondida;
+    }
+
+    function jogar(letra, btn) {
+      btn.disabled = true;
+      if (palavra.includes(letra)) {
+        let novaPalavra = "";
+        for (let i = 0; i < palavra.length; i++) {
+          novaPalavra += (palavra[i] === letra ? letra : palavraEscondida[i]);
+        }
+        palavraEscondida = novaPalavra;
+        document.getElementById("palavra").innerText = palavraEscondida;
+
+        if (palavraEscondida === palavra) {
+          indice++;
+          if (indice < palavrasRodada.length) {
+            document.getElementById("mensagem").innerText = "✅ Acertou! Próxima palavra...";
+            setTimeout(() => {
+              prepararPalavra();
+              document.getElementById("mensagem").innerText = "";
+              document.querySelectorAll("#letras button").forEach(b => b.disabled = false);
+            }, 1500);
+          } else {
+            document.getElementById("mensagem").innerText = "🎉 Você venceu, arrombado!";
+            desativarBotoes();
+          }
+        }
+      } else {
+        erros++;
+        document.getElementById("forca").innerText = "Erros: " + erros + "/6";
+        if (erros >= 6) {
+          document.getElementById("mensagem").innerText = "💀 Você perdeu! As palavras eram: " + palavrasRodada.join(", ");
+          desativarBotoes();
+        }
+      }
+    }
+
+    function desativarBotoes() {
+      document.querySelectorAll("#letras button").forEach(b => b.disabled = true);
+    }
+  </script>
+</body>
+</html>
