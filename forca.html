@@ -4,41 +4,63 @@
   <meta charset="UTF-8">
   <title>Jogo da Forca</title>
   <style>
-    body { background: #222; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    h1 { margin-bottom: 10px; }
-    #tema { font-size: 20px; margin: 10px 0; }
-    #palavra { font-size: 30px; letter-spacing: 8px; margin: 20px 0; }
-    #mensagem { margin: 15px 0; font-size: 18px; font-weight: bold; }
-    #forca { margin: 20px; font-size: 18px; }
-    #letras button { margin: 3px; padding: 10px 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; background: #444; color: white; }
-    #letras button:disabled { background: #999; cursor: not-allowed; }
-    #menu button { margin: 10px; padding: 12px 20px; font-size: 20px; border: none; border-radius: 10px; cursor: pointer; background: #0f0; color: black; font-weight: bold; }
-    a { color: #0f0; display: block; margin-top: 30px; font-size: 18px; text-decoration: none; }
+    body { font-family: Arial, sans-serif; text-align: center; }
+    #letras button { margin: 2px; padding: 10px; }
+    #palavra { font-size: 2em; letter-spacing: 5px; }
   </style>
 </head>
 <body>
-  <h1>🎲 Jogo da Forca</h1>
-
+  <h1>🎮 Jogo da Forca</h1>
   <div id="menu">
-    <p>Escolha a dificuldade:</p>
-    <button onclick="iniciarJogo(1)">😎 Fácil (1 palavra)</button>
-    <button onclick="iniciarJogo(3)">🔥 Difícil (3 palavras)</button>
+    <button onclick="iniciarJogo(1)">Modo Fácil (1 palavra)</button>
+    <button onclick="iniciarJogo(3)">Modo Difícil (3 palavras)</button>
   </div>
-
-  <div id="tema"></div>
-  <div id="palavra"></div>
-  <div id="mensagem"></div>
-  <div id="forca"></div>
+  <h2 id="tema"></h2>
+  <p id="palavra"></p>
+  <p id="forca"></p>
+  <p id="mensagem"></p>
   <div id="letras"></div>
 
-  <a href="index.html">⬅ Voltar para os Joguinhos</a>
-
   <script>
+    // Função para normalizar acentos/hífens
+    function removerAcentos(str) {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/-/g, " ");
+    }
+
+    // Banco de palavras
     const palavras = {
-      frutas: ["banana", "melancia", "uva", "abacaxi", "laranja", "morango"],
-      animais: ["cachorro", "gato", "elefante", "tigre", "papagaio", "cobra"],
-      paises: ["brasil", "argentina", "japao", "alemanha", "canada", "mexico"],
-      objetos: ["cadeira", "mesa", "computador", "fone", "carro", "livro"]
+      frutas: ["Abacate","Amora","Ameixa","Abacaxi","Acerola","Banana","Caqui","Caju","Cereja","Carambola",
+      "Damasco","Figo","Framboesa","Graviola","Goiaba","Guaraná","Jaca","Jabuticaba","Kiwi","Laranja","Limão",
+      "Morango","Melão","Maçã","Maracujá","Mamão","Manga","Nectarina","Pêra","Pitanga","Pêssego","Romã",
+      "Tomate","Tangerina","Uva"],
+      animais: ["abelha","abutre","águia","alce","alpaca","anta","antílope","aranha","arara","avestruz",
+      "babuíno","bacalhau","bagre","baiacu","baleia","barata","beija-flor","besouro","bezerro","bode",
+      "boi","borboleta","boto","búfalo","burro","cabra","cachorro","cágado","camaleão","camarão","camelo",
+      "camundongo","canário","canguru","capivara","caracol","caranguejo","carneiro","carrapato","cascavel",
+      "castor","cavalo","cavalo-marinho","cegonha","centopeia","chimpanzé","chinchila","cigarra","cisne",
+      "coala","cobra","codorna","coelho","coiote","coruja","corvo","crocodilo","cupim","cutia","diabo-da-tasmânia",
+      "doninha","dragão-de-komodo","dromedário","égua","elefante","ema","enguia","escaravelho","escorpião",
+      "esponja","esquilo","estrela-do-mar","faisão","falcão","flamingo","foca","formiga","fuinha","furão",
+      "gafanhoto","gaivota","galinha","galo","gambá","garça","gato","gavião","gazela","girafa","golfinho",
+      "gorila","gralha","grilo","guará","guaxinim","hamster","harpia","hiena","hipopótamo","iguana","jabuti",
+      "jacaré","jaguar","jamanta","jararaca","javali","jiboia","joaninha","joão-de-barro","jumento","kiwi",
+      "koala","lagarta","lagartixa","lagarto","lagosta","leão","leão-marinho","lebre","lêmur","leopardo",
+      "lesma","lhama","libélula","lince","lobo","lombriga","lontra","lula","macaco","mamute","marimbondo",
+      "mariposa","marisco","marmota","marreco","medusa","mexilhão","mico","minhoca","morcego","morsa","mosca",
+      "mosquito","mula","naja","narval","ocapi","onça","orangotango","orca","ornitorrinco","ostra","ouriço",
+      "ovelha","panda","pantera","papagaio","pardal","pato","pavão","peixe","peixe-boi","pelicano","percevejo",
+      "periquito","pernilongo","peru","pica-pau","pinguim","piolho","piranha","polvo","pombo","pônei","porco",
+      "porco-espinho","porquinho-da-índia","preguiça","pulga","quati","quero-quero","rã","raia","raposa",
+      "ratazana","rato","rinoceronte","sabiá","sagui","salamandra","salmão","sapo","sardinha","seriema","serpente",
+      "siri","tamanduá","tarântula","tartaruga","tatu","texugo","tico-tico","tigre","tilápia","toupeira","touro",
+      "tubarão","tucano","urso panda","urso","urubu","urutu","vaca","vaga-lume","veado","vespa","víbora",
+      "viúva-negra","wombat","zangão","zebra"],
+      paises: ["Brasil","Argentina","Estados Unidos","França","Itália","Japão","Portugal","Alemanha","México",
+      "África do Sul","Canadá","China","Austrália","Espanha","Inglaterra","Angola","Moçambique","Nigéria",
+      "Cabo Verde","Timor-Leste","São Tomé e Príncipe","Nova Zelândia","Índia","Rússia","Ucrânia","Colômbia",
+      "Chile","Peru","Paraguai","Uruguai","Venezuela","Cuba","Costa Rica","Honduras","Panamá","Bolívia",
+      "Egito","Marrocos","Tunísia","Argélia","Senegal","Camarões","Sudão","Etiópia","Somália","Quênia",
+      "Tanzânia","Zâmbia","Zimbábue","República Centro-Africana"]
     };
 
     let palavrasRodada = [];
@@ -48,7 +70,7 @@
     let erros = 0;
 
     function iniciarJogo(qtd) {
-      document.getElementById("menu").style.display = "none"; // esconde menu
+      document.getElementById("menu").style.display = "none";
       const temas = Object.keys(palavras);
       let temaSorteado = temas[Math.floor(Math.random() * temas.length)];
       let lista = [...palavras[temaSorteado]];
@@ -77,20 +99,38 @@
 
     function prepararPalavra() {
       palavra = palavrasRodada[indice];
-      palavraEscondida = palavra.replace(/./g, "_");
+      palavraEscondida = "";
+      for (let c of palavra) {
+        if (c === " " || c === "-") {
+          palavraEscondida += c; // mantém espaço/hífen visível
+        } else {
+          palavraEscondida += "_";
+        }
+      }
       document.getElementById("palavra").innerText = palavraEscondida;
     }
 
     function jogar(letra, btn) {
       btn.disabled = true;
-      if (palavra.includes(letra)) {
-        let novaPalavra = "";
-        for (let i = 0; i < palavra.length; i++) {
-          novaPalavra += (palavra[i] === letra ? letra : palavraEscondida[i]);
-        }
-        palavraEscondida = novaPalavra;
-        document.getElementById("palavra").innerText = palavraEscondida;
+      let normalizada = removerAcentos(palavra);
+      let acertou = false;
+      let novaPalavra = "";
 
+      for (let i = 0; i < palavra.length; i++) {
+        if (palavraEscondida[i] !== "_") {
+          novaPalavra += palavraEscondida[i]; // mantém revelado
+        } else if (normalizada[i] === letra) {
+          novaPalavra += palavra[i]; // revela com acento se tiver
+          acertou = true;
+        } else {
+          novaPalavra += "_";
+        }
+      }
+
+      palavraEscondida = novaPalavra;
+      document.getElementById("palavra").innerText = palavraEscondida;
+
+      if (acertou) {
         if (palavraEscondida === palavra) {
           indice++;
           if (indice < palavrasRodada.length) {
@@ -101,7 +141,7 @@
               document.querySelectorAll("#letras button").forEach(b => b.disabled = false);
             }, 1500);
           } else {
-            document.getElementById("mensagem").innerText = "🎉 Você venceu, arrombado!";
+            document.getElementById("mensagem").innerText = "🎉 Você venceu!";
             desativarBotoes();
           }
         }
